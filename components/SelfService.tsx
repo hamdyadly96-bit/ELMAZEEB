@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
 import { Employee, FinancialAdjustment, SystemSettings, ServiceRequest, AttendanceEntry } from '../types';
 
 interface SelfServiceProps {
@@ -52,7 +51,7 @@ const SelfService: React.FC<SelfServiceProps> = ({ employees, setEmployees, adju
         };
         setAttendance([...attendance, newRecord]);
         setGpsLoading(false);
-        alert(`تم تسجيل الحضور بنجاح! الموقع: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        alert(`تم تسجيل الحضور بنجاح! أسواق المعازيب تتمنى لك يوماً سعيداً.`);
       },
       (error) => {
         alert("فشل في الحصول على موقعك. يرجى تفعيل GPS.");
@@ -79,134 +78,131 @@ const SelfService: React.FC<SelfServiceProps> = ({ employees, setEmployees, adju
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
-      {/* نافذة المعاينة السريعة */}
-      {previewDocUrl && (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[200] flex items-center justify-center p-4 md:p-10 animate-in fade-in">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-4xl h-full flex flex-col overflow-hidden shadow-2xl relative">
-             <div className="p-6 border-b flex justify-between items-center bg-white">
-                <h3 className="font-black text-slate-800">معاينة وثيقتك الشخصية</h3>
-                <button onClick={() => setPreviewDocUrl(null)} className="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl hover:bg-red-50 hover:text-red-500 transition active-scale">✕</button>
-             </div>
-             <div className="flex-1 bg-slate-50 p-4 flex items-center justify-center overflow-auto custom-scrollbar">
-                {previewDocUrl.startsWith('data:application/pdf') ? (
-                   <iframe src={previewDocUrl} className="w-full h-full rounded-2xl border-0 shadow-lg" title="Doc"></iframe>
-                ) : (
-                   <img src={previewDocUrl} className="max-w-full max-h-full object-contain rounded-2xl shadow-xl" alt="Doc" />
-                )}
-             </div>
-          </div>
-        </div>
-      )}
-
+    <div className="space-y-8 animate-in slide-up duration-500 pb-12">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight">بوابة الموظف الرقمية</h2>
-          <p className="text-sm text-slate-500 font-medium">مرحباً {currentUser.name.split(' ')[0]}، خدماتك الإدارية في مكان واحد.</p>
+          <h2 className="text-2xl md:text-4xl font-black text-[#1b3152] tracking-tight">بوابة الموظف الذكية</h2>
+          <p className="text-sm md:text-base text-slate-500 font-medium">مرحباً {currentUser.name.split(' ')[0]}، كيف يمكننا مساعدتك في أسواق المعازيب اليوم؟</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           {!todayAttendance ? (
             <button 
               onClick={handleGPSClockIn}
               disabled={gpsLoading}
-              className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition flex items-center gap-2"
+              className="px-8 py-4 bg-[#76bc43] text-white rounded-[1.75rem] font-black shadow-xl shadow-[#76bc43]/20 hover:bg-[#68a63a] transition-all flex items-center gap-3 active-scale"
             >
-              <span>{gpsLoading ? '⏳' : '📍'}</span>
-              <span>بصمة حضور (GPS)</span>
+              <span className="text-xl">{gpsLoading ? '⏳' : '📍'}</span>
+              <span>تسجيل بصمة الدخول</span>
             </button>
           ) : (
-            <div className="px-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-2xl font-black text-xs flex items-center gap-2">
-              <span>✅</span>
-              <span>تم تسجيل الحضور: {todayAttendance.clockIn}</span>
+            <div className="px-8 py-4 bg-emerald-50 text-emerald-700 border-2 border-emerald-100 rounded-[1.75rem] font-black flex items-center gap-3">
+              <span className="text-xl">✅</span>
+              <div>
+                <p className="text-[10px] uppercase opacity-60">وقت الدخول</p>
+                <p className="text-sm">{todayAttendance.clockIn}</p>
+              </div>
             </div>
           )}
         </div>
       </header>
 
-      {personalNotifications.length > 0 && (
-        <div className="grid grid-cols-1 gap-4">
-          {personalNotifications.map((n, i) => (
-            <div key={i} className={`p-5 rounded-[2rem] border flex flex-col sm:flex-row items-center justify-between gap-4 animate-pulse-slow ${n.type === 'critical' ? 'bg-red-50 border-red-100 text-red-800' : 'bg-amber-50 border-amber-100 text-amber-800'}`}>
-              <div className="flex items-center gap-4 text-center sm:text-right">
-                <span className="text-3xl">{n.type === 'critical' ? '🚨' : '⏳'}</span>
-                <div>
-                   <p className="font-black text-sm">{n.title}</p>
-                   <p className="text-xs font-bold opacity-75">{n.message}</p>
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-4 space-y-8">
+          <div className="bg-white p-10 rounded-[3rem] border border-slate-50 shadow-sm text-center relative overflow-hidden group">
+            <div className="relative mt-2">
+              <div className="w-28 h-28 rounded-[2.5rem] mx-auto p-1 bg-gradient-to-tr from-[#76bc43] to-[#1b3152] shadow-xl transform group-hover:rotate-3 transition-transform duration-500">
+                <img src={currentUser.avatar} className="w-full h-full rounded-[2.25rem] object-cover border-4 border-white" alt="" />
               </div>
-              <button className={`px-6 py-2.5 rounded-xl font-black text-[10px] shadow-sm transition-all whitespace-nowrap ${n.type === 'critical' ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'}`}>
-                تحديث الوثيقة الآن
-              </button>
+              <span className="absolute -bottom-1 right-1/2 translate-x-12 w-8 h-8 bg-emerald-500 border-4 border-white rounded-2xl flex items-center justify-center text-white text-xs">✓</span>
             </div>
-          ))}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-center relative overflow-hidden">
-            <div className="relative mt-4">
-              <img src={currentUser.avatar} className="w-24 h-24 rounded-3xl mx-auto border-4 border-slate-50 shadow-md object-cover" alt="" />
-              <span className="absolute bottom-0 right-1/2 translate-x-6 w-5 h-5 bg-emerald-500 border-4 border-white rounded-full"></span>
-            </div>
-            <h3 className="text-lg font-black text-slate-800 mt-4">{currentUser.name}</h3>
-            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{currentUser.role}</p>
+            <h3 className="text-2xl font-black text-[#1b3152] mt-6">{currentUser.name}</h3>
+            <p className="text-xs font-black text-[#76bc43] uppercase tracking-widest mt-1">{currentUser.role}</p>
             
-            <div className="mt-6 space-y-3 text-right border-t border-slate-50 pt-6">
-              <div className="flex justify-between text-xs font-bold"><span className="text-slate-400">القسم:</span> <span className="text-slate-700">{currentUser.department}</span></div>
-              <div className="flex justify-between text-xs font-bold"><span className="text-slate-400">الفرع:</span> <span className="text-slate-700">{currentUser.branch}</span></div>
-              <div className="flex justify-between text-xs font-bold"><span className="text-slate-400">تاريخ التعيين:</span> <span className="text-slate-700">{currentUser.joinDate}</span></div>
+            <div className="mt-10 grid grid-cols-2 gap-4 text-right border-t border-slate-50 pt-8">
+               <div className="bg-slate-50 p-4 rounded-2xl">
+                 <p className="text-[10px] font-black text-slate-400 mb-1">القسم</p>
+                 <p className="text-xs font-black text-[#1b3152]">{currentUser.department}</p>
+               </div>
+               <div className="bg-slate-50 p-4 rounded-2xl">
+                 <p className="text-[10px] font-black text-slate-400 mb-1">الرقم الوظيفي</p>
+                 <p className="text-xs font-black text-[#1b3152]">#{currentUser.id.slice(-4)}</p>
+               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-             <h4 className="text-sm font-black text-slate-800 mb-4 flex items-center gap-2"><span>📂</span> وثائقي المرفوعة</h4>
-             <div className="space-y-3">
-                {currentUser.documents?.map(doc => (
-                   <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-transparent hover:border-blue-100 transition group cursor-pointer" onClick={() => doc.fileUrl && setPreviewDocUrl(doc.fileUrl)}>
-                      <div>
-                        <p className="text-[11px] font-black text-slate-700">{doc.type}</p>
-                        <p className="text-[9px] text-slate-400 font-bold">ينتهي: {doc.expiryDate}</p>
-                      </div>
-                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm text-xs opacity-0 group-hover:opacity-100 transition-opacity">👁️</div>
-                   </div>
-                ))}
+          <div className="bg-[#1b3152] p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
+             <div className="relative z-10">
+               <h4 className="text-lg font-black mb-6 flex items-center gap-3">
+                 <span className="w-1.5 h-6 bg-[#76bc43] rounded-full"></span>
+                 أحدث التعميمات
+               </h4>
+               <div className="space-y-4">
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
+                    <p className="text-xs font-black mb-1">خطة مبيعات رمضان القادمة</p>
+                    <p className="text-[10px] opacity-40">منذ ساعتين • الإدارة العليا</p>
+                  </div>
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
+                    <p className="text-xs font-black mb-1">تحديث جدول المناوبات للفرع الرئيسي</p>
+                    <p className="text-[10px] opacity-40">منذ يوم • الموارد البشرية</p>
+                  </div>
+               </div>
              </div>
+             <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#76bc43]/10 rounded-full blur-2xl"></div>
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ServiceCard title="تعريف بالراتب" icon="📜" desc="تحميل شهادة تعريف رسمية" onClick={() => { setRequestType('تعريف بالراتب'); setIsRequestModalOpen(true); }} />
-            <ServiceCard title="طلب سلفة / عهدة" icon="💸" desc="طلب مالي أو عهدة عينية" onClick={() => { setRequestType('طلب سلفة'); setIsRequestModalOpen(true); }} />
+        <div className="lg:col-span-8 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ServiceCard 
+              title="تعريف بالراتب" 
+              icon="📄" 
+              desc="إصدار وتحميل شهادة تعريف رسمية" 
+              onClick={() => { setRequestType('تعريف بالراتب'); setIsRequestModalOpen(true); }} 
+              color="green"
+            />
+            <ServiceCard 
+              title="طلب سلفة مالية" 
+              icon="💰" 
+              desc="تقديم طلب سلفة على الراتب القادم" 
+              onClick={() => { setRequestType('طلب سلفة'); setIsRequestModalOpen(true); }} 
+              color="navy"
+            />
           </div>
 
-          <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden h-[350px] flex flex-col">
-            <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
-               <h4 className="text-sm font-black text-slate-800">تتبع طلباتي</h4>
-               <span className="text-[10px] bg-white px-2 py-1 rounded-lg border font-bold">الكل ({myRequests.length})</span>
+          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[500px]">
+            <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+               <div className="flex items-center gap-4">
+                  <span className="text-2xl">📋</span>
+                  <h4 className="text-lg font-black text-[#1b3152]">تتبع طلباتي الإدارية</h4>
+               </div>
+               <span className="px-4 py-1.5 bg-white border rounded-xl text-xs font-black text-[#76bc43]">
+                 {myRequests.length} طلبات إجمالية
+               </span>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto no-scrollbar p-8 space-y-5">
               {myRequests.length > 0 ? myRequests.map(req => (
-                <div key={req.id} className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-transparent hover:border-blue-100 transition">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">📑</div>
+                <div key={req.id} className="flex items-center justify-between p-6 bg-slate-50/50 rounded-[2rem] border border-transparent hover:border-[#76bc43]/20 hover:bg-white transition-all group">
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-slate-50 group-hover:scale-110 transition-transform">📑</div>
                     <div>
-                      <p className="text-xs font-black text-slate-800">{req.type}</p>
-                      <p className="text-[10px] text-slate-400 font-bold">{req.createdAt}</p>
+                      <p className="text-sm font-black text-[#1b3152]">{req.type}</p>
+                      <p className="text-[11px] text-slate-400 font-bold mt-0.5">{req.createdAt}</p>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-xl text-[9px] font-black border ${
-                    req.status === 'مقبول' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                    req.status === 'مرفوض' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'
-                  }`}>
-                    {req.status}
-                  </span>
+                  <div className="flex items-center gap-4">
+                    {req.amount && <span className="text-xs font-black text-slate-600 ml-4">{req.amount.toLocaleString()} ر.س</span>}
+                    <span className={`px-5 py-2 rounded-2xl text-[10px] font-black border-2 ${
+                      req.status === 'مقبول' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                      req.status === 'مرفوض' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                    }`}>
+                      {req.status}
+                    </span>
+                  </div>
                 </div>
               )) : (
                 <div className="h-full flex flex-col items-center justify-center opacity-30">
-                  <span className="text-4xl mb-4">📂</span>
-                  <p className="text-xs font-bold italic">لا توجد طلبات سابقة.</p>
+                  <span className="text-6xl mb-6">📁</span>
+                  <p className="text-base font-black italic">لم تقم بتقديم أي طلبات حتى الآن.</p>
                 </div>
               )}
             </div>
@@ -215,13 +211,15 @@ const SelfService: React.FC<SelfServiceProps> = ({ employees, setEmployees, adju
       </div>
 
       {isRequestModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4">
-          <div className="bg-white rounded-[3rem] w-full max-w-lg p-8 md:p-12 shadow-2xl animate-in zoom-in-95 duration-300">
-            <h3 className="text-2xl font-black text-slate-800 mb-6">تقديم {requestType}</h3>
-            <form onSubmit={handleSubmitRequest} className="space-y-6">
+        <div className="fixed inset-0 bg-[#1b3152]/60 backdrop-blur-md flex items-center justify-center z-[110] p-6">
+          <div className="bg-white rounded-[3.5rem] w-full max-w-xl p-10 md:p-14 shadow-2xl animate-in zoom-in-95 duration-300">
+            <h3 className="text-3xl font-black text-[#1b3152] mb-4">تقديم طلب جديد</h3>
+            <p className="text-slate-500 mb-10 font-medium">املأ البيانات المطلوبة وسيتم الرد عليك خلال 24 ساعة.</p>
+            
+            <form onSubmit={handleSubmitRequest} className="space-y-8">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">نوع الطلب</label>
-                <select className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl p-4 text-sm font-bold" value={requestType} onChange={(e) => setRequestType(e.target.value as any)}>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-4">نوع الخدمة المطلوبة</label>
+                <select className="w-full bg-slate-50 border-2 border-transparent focus:border-[#76bc43] rounded-3xl p-5 text-sm font-black outline-none transition" value={requestType} onChange={(e) => setRequestType(e.target.value as any)}>
                   <option value="تعريف بالراتب">تعريف بالراتب</option>
                   <option value="طلب سلفة">طلب سلفة مالية</option>
                   <option value="طلب عهدة">طلب عهدة عينية</option>
@@ -231,19 +229,19 @@ const SelfService: React.FC<SelfServiceProps> = ({ employees, setEmployees, adju
 
               {(requestType === 'طلب سلفة' || requestType === 'طلب عهدة') && (
                 <div className="space-y-2 animate-in slide-in-from-top duration-300">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">المبلغ المطلوب (ريال)</label>
-                  <input type="number" className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl p-4 text-sm font-bold" value={requestAmount} onChange={(e) => setRequestAmount(Number(e.target.value))} required />
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-4">المبلغ (ريال سعودي)</label>
+                  <input type="number" className="w-full bg-slate-50 border-2 border-transparent focus:border-[#76bc43] rounded-3xl p-5 text-sm font-black outline-none transition" value={requestAmount} onChange={(e) => setRequestAmount(Number(e.target.value))} required />
                 </div>
               )}
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">تفاصيل إضافية / المبررات</label>
-                <textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl p-4 text-sm font-bold" rows={4} value={requestDetails} onChange={(e) => setRequestDetails(e.target.value)} placeholder="يرجى كتابة التفاصيل هنا..." required></textarea>
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-4">مبررات الطلب / ملاحظات</label>
+                <textarea className="w-full bg-slate-50 border-2 border-transparent focus:border-[#76bc43] rounded-3xl p-5 text-sm font-black outline-none transition" rows={4} value={requestDetails} onChange={(e) => setRequestDetails(e.target.value)} placeholder="اكتب مبرراتك هنا بوضوح..." required></textarea>
               </div>
 
-              <div className="flex gap-4 pt-4">
-                <button type="submit" className="flex-[2] bg-blue-600 text-white py-4 rounded-[1.5rem] font-black shadow-xl hover:bg-blue-700 transition transform active:scale-95">إرسال الطلب للاعتماد</button>
-                <button type="button" onClick={() => setIsRequestModalOpen(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-[1.5rem] font-black">إلغاء</button>
+              <div className="flex gap-4 pt-6">
+                <button type="submit" className="flex-[2] bg-[#1b3152] text-white py-5 rounded-[2rem] font-black shadow-xl hover:bg-[#13243d] transition-all active-scale">إرسال الطلب للاعتماد</button>
+                <button type="button" onClick={() => setIsRequestModalOpen(false)} className="flex-1 bg-slate-100 text-slate-600 py-5 rounded-[2rem] font-black active-scale">تجاهل</button>
               </div>
             </form>
           </div>
@@ -253,12 +251,14 @@ const SelfService: React.FC<SelfServiceProps> = ({ employees, setEmployees, adju
   );
 };
 
-const ServiceCard = ({ title, icon, desc, onClick }: any) => (
-  <button onClick={onClick} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm text-right hover:border-blue-200 transition group flex items-center gap-4 active-scale">
-    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition shadow-sm">{icon}</div>
+const ServiceCard = ({ title, icon, desc, onClick, color }: any) => (
+  <button onClick={onClick} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm text-right hover:shadow-xl transition-all group flex items-center gap-6 active-scale">
+    <div className={`w-16 h-16 rounded-[1.75rem] flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shadow-sm ${color === 'green' ? 'bg-[#76bc43]/10 text-[#76bc43]' : 'bg-[#1b3152]/10 text-[#1b3152]'}`}>
+      {icon}
+    </div>
     <div>
-      <h4 className="font-black text-slate-800 text-sm">{title}</h4>
-      <p className="text-[10px] text-slate-400 font-bold">{desc}</p>
+      <h4 className="font-black text-[#1b3152] text-base">{title}</h4>
+      <p className="text-[11px] text-slate-400 font-bold mt-1">{desc}</p>
     </div>
   </button>
 );

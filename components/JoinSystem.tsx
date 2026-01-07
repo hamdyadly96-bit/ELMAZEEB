@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Invitation, Employee, EmployeeStatus, SystemSettings, Document as EmployeeDoc } from '../types';
 import { extractEmployeeDataFromDocument } from '../services/geminiService';
@@ -20,12 +19,13 @@ const JoinSystem: React.FC<JoinSystemProps> = ({ invitation, settings, onJoin })
     iban: '',
     password: '',
     isSaudi: true,
+    gender: 'ذكر' as 'ذكر' | 'أنثى',
     customFields: {} as any,
     documents: [] as EmployeeDoc[]
   });
 
   const handleJoinFinal = () => {
-    // Fixed: Removed 'onboardingCompleted' property as it doesn't exist in the Employee interface.
+    // Fixed: Added missing required 'gender' property to Employee interface.
     const newEmp: Employee = {
       id: Date.now().toString(),
       name: formData.name,
@@ -39,6 +39,7 @@ const JoinSystem: React.FC<JoinSystemProps> = ({ invitation, settings, onJoin })
       status: EmployeeStatus.ACTIVE,
       avatar: `https://picsum.photos/seed/${invitation.email}/200`,
       isSaudi: formData.isSaudi,
+      gender: formData.gender,
       phone: formData.phone,
       iban: formData.iban,
       documents: formData.documents,
@@ -152,15 +153,29 @@ const JoinSystem: React.FC<JoinSystemProps> = ({ invitation, settings, onJoin })
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                  <input 
-                    type="checkbox" 
-                    id="isSaudi"
-                    className="w-5 h-5 rounded-lg border-blue-200 text-blue-600 focus:ring-blue-500"
-                    checked={formData.isSaudi}
-                    onChange={e => setFormData({...formData, isSaudi: e.target.checked})}
-                  />
-                  <label htmlFor="isSaudi" className="text-sm font-black text-blue-800 cursor-pointer">أنا مواطن سعودي 🇸🇦</label>
+                {/* Fixed: Added gender selection and placed it in a grid with isSaudi checkbox */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-2">الجنس</label>
+                    <select 
+                      className="w-full bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl p-4 text-sm font-black outline-none transition"
+                      value={formData.gender}
+                      onChange={e => setFormData({...formData, gender: e.target.value as any})}
+                    >
+                      <option value="ذكر">ذكر</option>
+                      <option value="أنثى">أنثى</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl border border-blue-100 mt-6">
+                    <input 
+                      type="checkbox" 
+                      id="isSaudi"
+                      className="w-5 h-5 rounded-lg border-blue-200 text-blue-600 focus:ring-blue-500"
+                      checked={formData.isSaudi}
+                      onChange={e => setFormData({...formData, isSaudi: e.target.checked})}
+                    />
+                    <label htmlFor="isSaudi" className="text-sm font-black text-blue-800 cursor-pointer">أنا مواطن سعودي 🇸🇦</label>
+                  </div>
                 </div>
               </div>
 

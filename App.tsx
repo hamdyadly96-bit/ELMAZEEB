@@ -1,33 +1,34 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import PeopleHub from './components/PeopleHub';
-import TimeHub from './components/TimeHub';
-import FinanceHub from './components/FinanceHub';
-import GrowthHub from './components/GrowthHub';
-import SelfService from './components/SelfService';
-import Settings from './components/Settings';
-import JoinSystem from './components/JoinSystem';
-import NotificationPanel from './components/NotificationPanel';
-import { INITIAL_EMPLOYEES, INITIAL_BRANCHES, DEPARTMENTS } from './constants';
-import { Employee, AttendanceEntry, LeaveRequest, Branch, FinancialAdjustment, SystemSettings, Invitation, Shift, UserRole, ServiceRequest } from './types';
+import Sidebar from './components/Sidebar.tsx';
+import Dashboard from './components/Dashboard.tsx';
+import PeopleHub from './components/PeopleHub.tsx';
+import TimeHub from './components/TimeHub.tsx';
+import FinanceHub from './components/FinanceHub.tsx';
+import GrowthHub from './components/GrowthHub.tsx';
+import SelfService from './components/SelfService.tsx';
+import Settings from './components/Settings.tsx';
+import { INITIAL_EMPLOYEES, INITIAL_BRANCHES, DEPARTMENTS, INITIAL_CAREER_PATHS } from './constants.tsx';
+import { Employee, AttendanceEntry, LeaveRequest, Branch, FinancialAdjustment, SystemSettings, Invitation, Shift, UserRole, ServiceRequest, BiometricDevice, CareerPath, PeerFeedback } from './types.ts';
 
 const STORAGE_KEYS = {
-  EMPLOYEES: 'hr_employees_v5',
-  ATTENDANCE: 'hr_attendance_v5',
-  LEAVES: 'hr_leaves_v5',
-  BRANCHES: 'hr_branches_v5',
-  ADJUSTMENTS: 'hr_adj_v5',
-  SETTINGS: 'hr_settings_v5',
-  INVITATIONS: 'hr_invitations_v5',
-  SHIFTS: 'hr_shifts_v5',
-  REQUESTS: 'hr_requests_v5',
+  EMPLOYEES: 'hr_employees_v7',
+  ATTENDANCE: 'hr_attendance_v7',
+  LEAVES: 'hr_leaves_v7',
+  BRANCHES: 'hr_branches_v7',
+  ADJUSTMENTS: 'hr_adj_v7',
+  SETTINGS: 'hr_settings_v7',
+  INVITATIONS: 'hr_invitations_v7',
+  SHIFTS: 'hr_shifts_v7',
+  REQUESTS: 'hr_requests_v7',
+  DEVICES: 'hr_biometric_devices_v7',
+  CAREER_PATHS: 'hr_career_paths_v7',
+  PEER_FEEDBACK: 'hr_peer_feedback_v7',
 };
 
 const DEFAULT_SETTINGS: SystemSettings = {
   alertThresholdDays: 30,
-  companyName: 'مجموعة الرؤية المتطورة',
+  companyName: 'أسواق المعازيب',
   autoSyncBiometric: false,
   departments: DEPARTMENTS,
   customFieldDefinitions: [
@@ -39,7 +40,6 @@ const DEFAULT_SETTINGS: SystemSettings = {
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
   
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>(() => {
     const saved = localStorage.getItem('hr_current_user_role');
@@ -81,6 +81,21 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [devices, setDevices] = useState<BiometricDevice[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.DEVICES);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [careerPaths, setCareerPaths] = useState<CareerPath[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.CAREER_PATHS);
+    return saved ? JSON.parse(saved) : INITIAL_CAREER_PATHS;
+  });
+
+  const [peerFeedback, setPeerFeedback] = useState<PeerFeedback[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.PEER_FEEDBACK);
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [settings, setSettings] = useState<SystemSettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
@@ -101,226 +116,86 @@ const App: React.FC = () => {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
     localStorage.setItem(STORAGE_KEYS.INVITATIONS, JSON.stringify(invitations));
     localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(serviceRequests));
+    localStorage.setItem(STORAGE_KEYS.DEVICES, JSON.stringify(devices));
+    localStorage.setItem(STORAGE_KEYS.CAREER_PATHS, JSON.stringify(careerPaths));
+    localStorage.setItem(STORAGE_KEYS.PEER_FEEDBACK, JSON.stringify(peerFeedback));
     localStorage.setItem('hr_current_user_role', currentUserRole);
-  }, [employees, attendance, leaves, branches, adjustments, shifts, settings, invitations, serviceRequests, currentUserRole]);
-
-  const notifications = useMemo(() => {
-    const alerts: any[] = [];
-    const today = new Date();
-    const thresholdDate = new Date();
-    thresholdDate.setDate(today.getDate() + settings.alertThresholdDays);
-
-    const currentUser = employees.find(e => e.name.includes('سلمان')) || employees[0];
-
-    employees.forEach(emp => {
-      emp.documents?.forEach(doc => {
-        const expiry = new Date(doc.expiryDate);
-        if (expiry <= thresholdDate) {
-          const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          const isManager = currentUserRole === 'ADMIN' || currentUserRole === 'HR_MANAGER';
-          const isOwnDoc = emp.id === currentUser.id;
-
-          if (isManager || isOwnDoc) {
-            alerts.push({
-              id: `${emp.id}_${doc.id}`,
-              title: isOwnDoc ? `وثيقتك (${doc.type}) تنتهي قريباً` : `انتهاء وثيقة للموظف: ${emp.name}`,
-              message: diffDays < 0 ? `الوثيقة منتهية منذ ${Math.abs(diffDays)} يوم!` : `الوثيقة تنتهي خلال ${diffDays} يوم.`,
-              type: diffDays < 0 ? 'critical' : 'warning',
-              date: doc.expiryDate,
-              isOwn: isOwnDoc
-            });
-          }
-        }
-      });
-    });
-    return alerts;
-  }, [employees, settings.alertThresholdDays, currentUserRole]);
-
-  const cycleRole = () => {
-    let newRole: UserRole;
-    if (currentUserRole === 'ADMIN') newRole = 'HR_MANAGER';
-    else if (currentUserRole === 'HR_MANAGER') newRole = 'EMPLOYEE';
-    else newRole = 'ADMIN';
-
-    setCurrentUserRole(newRole);
-    setActiveTab(newRole === 'EMPLOYEE' ? 'self-service' : 'dashboard');
-    setSidebarOpen(false);
-  };
+  }, [employees, attendance, leaves, branches, adjustments, shifts, settings, invitations, serviceRequests, devices, currentUserRole, careerPaths, peerFeedback]);
 
   const currentTabLabel = useMemo(() => {
     const labels: Record<string, string> = {
-      dashboard: 'لوحة التحكم',
-      people_hub: 'شؤون الموظفين',
-      employees: 'قائمة الكوادر',
-      org: 'الهيكل التنظيمي',
-      docs: 'الأرشيف الرقمي',
-      time_hub: 'إدارة الوقت',
-      attendance: 'سجل الحضور',
-      leaves: 'طلبات الإجازات',
-      shifts: 'جدولة الورديات',
-      biometric: 'مزامنة البصمة',
-      finance_hub: 'المالية',
-      payroll: 'مسير الرواتب',
-      adjustments: 'المؤثرات المالية',
-      approvals: 'الاعتمادات',
-      growth_hub: 'التطوير والذكاء',
-      ai: 'المساعد الذكي',
-      career: 'المسار المهني',
+      dashboard: 'مركز القيادة',
+      people_hub: 'إدارة الكوادر البشرية',
+      time_hub: 'نظام الوقت والالتزام',
+      finance_hub: 'الشؤون المالية والرواتب',
+      growth_hub: 'الذكاء والنمو المهني',
       'self-service': 'بوابة الخدمة الذاتية',
-      settings: 'إعدادات النظام'
+      settings: 'إعدادات المنظومة',
+      docs: 'إدارة الوثائق والرقابة',
+      leaves: 'نظام طلبات الإجازات'
     };
     return labels[activeTab] || 'الرئيسية';
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen flex bg-[#fbfcfd]">
+    <div className="min-h-screen flex bg-[#f8fafc] overflow-x-hidden">
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        alertCount={notifications.length} 
+        alertCount={serviceRequests.filter(r => r.status === 'معلق').length} 
         isOpen={isSidebarOpen} 
         onClose={() => setSidebarOpen(false)}
         role={currentUserRole}
-        onSwitchRole={cycleRole}
+        onSwitchRole={() => setCurrentUserRole(prev => prev === 'ADMIN' ? 'EMPLOYEE' : 'ADMIN')}
       />
 
-      <main className="flex-1 min-w-0 lg:mr-64 flex flex-col h-screen overflow-hidden relative">
-        {/* Background Decor */}
-        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-blue-50/30 to-transparent pointer-events-none"></div>
-        
-        <header className="fixed lg:sticky top-0 right-0 left-0 lg:right-auto h-16 md:h-20 border-b border-slate-100 bg-white/80 backdrop-blur-xl z-40 flex items-center justify-between px-4 md:px-10">
-          <div className="flex items-center gap-4">
-             <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-11 h-11 flex items-center justify-center bg-slate-50 text-slate-600 rounded-[1rem] active-scale">
-               <span className="text-xl">☰</span>
-             </button>
-             <div className="flex flex-col">
-               <div className="flex items-center gap-2 text-[10px] font-black text-slate-400">
-                 <span className="opacity-50">النظام</span>
-                 <span className="opacity-30">/</span>
-                 <span className="text-blue-600 uppercase">{activeTab.split('_')[0]}</span>
-               </div>
-               <h2 className="text-sm md:text-base font-black text-slate-800 tracking-tight">{currentTabLabel}</h2>
-             </div>
+      <main className="flex-1 min-w-0 lg:mr-72 flex flex-col h-screen overflow-hidden relative">
+        <header className="h-20 md:h-24 border-b border-slate-100 glass-header sticky top-0 z-40 flex items-center justify-between px-8 md:px-12">
+          <div className="flex items-center gap-6">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-3 text-slate-600 bg-slate-50 rounded-2xl active-scale">
+               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+            <div className="flex flex-col">
+               <h2 className="text-sm md:text-lg font-black text-[#1b3152] tracking-tight">{currentTabLabel}</h2>
+               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            </div>
           </div>
-
-          <div className="flex items-center gap-3 md:gap-5">
-            <div className="relative">
-              <button 
-                onClick={() => setIsNotifOpen(!isNotifOpen)}
-                className={`w-11 h-11 rounded-[1.1rem] flex items-center justify-center transition-all active-scale ${isNotifOpen ? 'bg-blue-600 text-white shadow-xl shadow-blue-100' : 'bg-white border border-slate-100 text-slate-400 hover:text-slate-600'}`}
-              >
-                <span className="text-xl">🔔</span>
-                {notifications.length > 0 && (
-                  <span className="absolute top-2 right-2 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
-              {isNotifOpen && (
-                <NotificationPanel 
-                  notifications={notifications} 
-                  onClose={() => setIsNotifOpen(false)} 
-                  onViewAction={(id) => {
-                    setActiveTab(currentUserRole === 'EMPLOYEE' ? 'self-service' : 'people_hub');
-                    setIsNotifOpen(false);
-                  }}
-                />
-              )}
-            </div>
-            
-            <div className="hidden xs:flex items-center gap-3 bg-slate-50 border border-slate-100 pl-4 pr-1 py-1 rounded-[1.25rem] hover:bg-white transition-all cursor-pointer group shadow-sm" onClick={cycleRole}>
-              <div className="text-left">
-                <p className="text-[11px] font-black text-slate-800 group-hover:text-blue-600 transition-colors">سلمان العتيبي</p>
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest text-left">{currentUserRole === 'ADMIN' ? 'مدير النظام' : 'موظف'}</p>
-              </div>
-              <img 
-                src={currentUserRole === 'ADMIN' ? 'https://picsum.photos/seed/admin/100' : 'https://picsum.photos/seed/emp/100'} 
-                className="w-9 h-9 rounded-xl object-cover shadow-sm ring-2 ring-white" 
-                alt="Profile" 
-              />
-            </div>
+          
+          <div className="flex items-center gap-5">
+             <div className="hidden md:flex flex-col items-end">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">مدير النظام</p>
+                <p className="text-xs font-black text-[#1b3152]">سلمان العتيبي</p>
+             </div>
+             <div className="w-12 h-12 rounded-[1.25rem] bg-gradient-to-tr from-[#1b3152] to-[#3b82f6] border-4 border-white shadow-xl flex items-center justify-center text-xs font-black text-white">SA</div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-10 bg-transparent relative z-10">
-          <div className="max-w-6xl mx-auto page-transition safe-bottom">
-            {activeTab === 'dashboard' && <Dashboard employees={employees} attendance={attendance} shifts={shifts} settings={settings} />}
+        <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth">
+          <div className="max-w-7xl mx-auto p-8 md:p-12">
+            {activeTab === 'dashboard' && <Dashboard employees={employees} attendance={attendance} shifts={shifts} settings={settings} onNavigate={setActiveTab} />}
             
-            {['people_hub', 'employees', 'org', 'tree', 'docs'].includes(activeTab) && (
-              <PeopleHub 
-                employees={employees} 
-                setEmployees={setEmployees} 
-                branches={branches} 
-                setBranches={setBranches}
-                settings={settings} 
-                setSettings={setSettings}
-                invitations={invitations} 
-                setInvitations={setInvitations} 
-                attendance={attendance} 
-                leaves={leaves} 
-                adjustments={adjustments} 
-                shifts={shifts}
-                onSimulateJoin={() => {}}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              />
+            {(activeTab === 'people_hub' || activeTab === 'docs' || activeTab === 'depts' || activeTab === 'org') && (
+              <PeopleHub employees={employees} setEmployees={setEmployees} branches={branches} setBranches={setBranches} settings={settings} setSettings={setSettings} invitations={invitations} setInvitations={setInvitations} attendance={attendance} leaves={leaves} adjustments={adjustments} setAdjustments={setAdjustments} shifts={shifts} onSimulateJoin={() => {}} activeTab={activeTab} />
             )}
 
-            {['time_hub', 'attendance', 'leaves', 'shifts', 'biometric'].includes(activeTab) && (
-              <TimeHub 
-                employees={employees} 
-                setEmployees={setEmployees}
-                attendance={attendance} 
-                setAttendance={setAttendance} 
-                shifts={shifts} 
-                setShifts={setShifts}
-                settings={settings}
-                leaves={leaves}
-                setLeaves={setLeaves}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              />
+            {(activeTab === 'time_hub' || activeTab === 'leaves' || activeTab === 'attendance' || activeTab === 'shifts' || activeTab === 'biometric') && (
+              <TimeHub employees={employees} setEmployees={setEmployees} attendance={attendance} setAttendance={setAttendance} shifts={shifts} setShifts={setShifts} settings={settings} leaves={leaves} setLeaves={setLeaves} devices={devices} setDevices={setDevices} activeTab={activeTab} />
             )}
 
-            {['finance_hub', 'payroll', 'adjustments', 'approvals'].includes(activeTab) && (
-              <FinanceHub 
-                employees={employees} 
-                attendance={attendance}
-                shifts={shifts}
-                adjustments={adjustments} 
-                setAdjustments={setAdjustments} 
-                settings={settings}
-                requests={serviceRequests}
-                setRequests={setServiceRequests}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              />
-            )}
-
-            {['growth_hub', 'ai', 'career'].includes(activeTab) && (
+            {activeTab === 'finance_hub' && <FinanceHub employees={employees} attendance={attendance} shifts={shifts} adjustments={adjustments} setAdjustments={setAdjustments} settings={settings} requests={serviceRequests} setRequests={setServiceRequests} />}
+            {activeTab === 'growth_hub' && (
               <GrowthHub 
                 employees={employees} 
                 setEmployees={setEmployees} 
                 currentUserRole={currentUserRole} 
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              />
-            )}
-
-            {activeTab === 'self-service' && (
-              <SelfService 
-                employees={employees} 
-                adjustments={adjustments} 
-                setEmployees={setEmployees} 
+                careerPaths={careerPaths} 
+                setCareerPaths={setCareerPaths} 
                 settings={settings}
-                requests={serviceRequests}
-                setRequests={setServiceRequests}
-                attendance={attendance}
-                setAttendance={setAttendance}
-                personalNotifications={notifications.filter(n => n.isOwn)}
+                peerFeedback={peerFeedback}
+                setPeerFeedback={setPeerFeedback}
               />
             )}
-
+            {activeTab === 'self-service' && <SelfService employees={employees} adjustments={adjustments} setEmployees={setEmployees} settings={settings} requests={serviceRequests} setRequests={setServiceRequests} attendance={attendance} setAttendance={setAttendance} personalNotifications={[]} />}
             {activeTab === 'settings' && <Settings settings={settings} setSettings={setSettings} />}
           </div>
         </div>

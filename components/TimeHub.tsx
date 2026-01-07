@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import Attendance from './Attendance';
-import ShiftManagement from './ShiftManagement';
-import BiometricSync from './BiometricSync';
-import LeaveManagement from './LeaveManagement';
-import { Employee, AttendanceEntry, Shift, SystemSettings, LeaveRequest } from '../types';
+import Attendance from './Attendance.tsx';
+import ShiftManagement from './ShiftManagement.tsx';
+import BiometricSync from './BiometricSync.tsx';
+import LeaveManagement from './LeaveManagement.tsx';
+import { Employee, AttendanceEntry, Shift, SystemSettings, LeaveRequest, BiometricDevice } from '../types.ts';
 
 interface TimeHubProps {
   employees: Employee[];
@@ -16,6 +16,8 @@ interface TimeHubProps {
   settings: SystemSettings;
   leaves: LeaveRequest[];
   setLeaves: (leaves: LeaveRequest[]) => void;
+  devices: BiometricDevice[];
+  setDevices: (devices: BiometricDevice[]) => void;
   activeTab?: string;
   setActiveTab?: (tab: string) => void;
 }
@@ -38,25 +40,27 @@ const TimeHub: React.FC<TimeHubProps> = (props) => {
   };
 
   const tabs = [
-    { id: 'attendance', label: 'الحضور', icon: '📅' },
-    { id: 'leaves', label: 'الإجازات', icon: '🏖️' },
-    { id: 'shifts', label: 'الورديات', icon: '🕒' },
-    { id: 'biometric', label: 'البصمة', icon: '📟' },
+    { id: 'attendance', label: 'الحضور المباشر', icon: '📅' },
+    { id: 'leaves', label: 'إدارة الإجازات', icon: '🏖️' },
+    { id: 'shifts', label: 'جدولة الورديات', icon: '🕒' },
+    { id: 'biometric', label: 'أجهزة البصمة', icon: '📟' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="sticky top-16 md:top-0 z-30 bg-[#f8fafc] -mx-4 md:mx-0 px-4 md:px-0 py-2">
-        <div className="flex bg-white p-1 rounded-2xl border border-slate-100 shadow-sm overflow-x-auto no-scrollbar max-w-full">
+      <div className="sticky top-16 md:top-0 z-30 bg-[#f8fafc]/90 backdrop-blur-md -mx-6 md:-mx-10 px-6 md:px-10 py-4 border-b border-slate-100">
+        <div className="flex bg-white p-1 rounded-[1.25rem] border border-slate-100 shadow-sm overflow-x-auto no-scrollbar gap-1 max-w-fit mx-auto md:mx-0">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => handleSubTabChange(tab.id as any)}
               className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap active-scale ${
-                subTab === tab.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'
+                subTab === tab.id 
+                  ? 'bg-blue-600 text-white premium-shadow' 
+                  : 'text-slate-500 hover:bg-slate-50'
               }`}
             >
-              <span>{tab.icon}</span>
+              <span className="text-sm">{tab.icon}</span>
               <span>{tab.label}</span>
             </button>
           ))}
@@ -93,6 +97,8 @@ const TimeHub: React.FC<TimeHubProps> = (props) => {
             employees={props.employees} 
             attendance={props.attendance} 
             setAttendance={props.setAttendance} 
+            devices={props.devices}
+            setDevices={props.setDevices}
           />
         )}
       </div>

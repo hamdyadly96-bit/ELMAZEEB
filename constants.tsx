@@ -1,5 +1,31 @@
 
-import { Employee, EmployeeStatus, Branch } from './types';
+import { Employee, EmployeeStatus, Branch, CareerPath } from './types';
+
+export const INITIAL_CAREER_PATHS: CareerPath[] = [
+  {
+    id: 'path_tech_dev',
+    name: 'مسار التطوير التقني',
+    department: 'التطوير',
+    levels: [
+      {
+        id: 'lv_jr_dev',
+        title: 'مطور جونيور',
+        description: 'بداية الرحلة التقنية، التركيز على تنفيذ المهام المحددة وتعلم معايير البرمجة في المنظمة.',
+        requiredSkills: ['React', 'JavaScript', 'Git'],
+        requiredCourses: ['أساسيات React المتقدمة', 'هياكل البيانات'],
+        salaryRange: { min: 8000, max: 11000 }
+      },
+      {
+        id: 'lv_sr_dev',
+        title: 'مطور سينيور',
+        description: 'قيادة المشاريع البرمجية الصغيرة، مراجعة الكود، والمساهمة في تصميم النظام.',
+        requiredSkills: ['System Design', 'TypeScript', 'Node.js'],
+        requiredCourses: ['هندسة البرمجيات الكبيرة', 'الأمن السيبراني للمطورين'],
+        salaryRange: { min: 12000, max: 18000 }
+      }
+    ]
+  }
+];
 
 export const INITIAL_EMPLOYEES: Employee[] = [
   {
@@ -15,11 +41,14 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     email: 'ahmed@company.com',
     phone: '0501234567',
     avatar: 'https://picsum.photos/seed/1/200',
+    gender: 'ذكر',
     isSaudi: true,
-    documents: [
-      { id: 'd1', type: 'إقامة', expiryDate: '2025-12-30' },
-      { id: 'd2', type: 'شهادة صحية', expiryDate: '2024-06-15' }
-    ]
+    idNumber: '1234567890',
+    idExpiryDate: '2026-10-10',
+    iban: 'SA1000000000000000000001',
+    careerPathId: 'path_tech_dev',
+    currentLevelId: 'lv_sr_dev',
+    documents: []
   },
   {
     id: '2',
@@ -34,28 +63,14 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     email: 'sara@company.com',
     phone: '0555555555',
     avatar: 'https://picsum.photos/seed/2/200',
+    gender: 'أنثى',
     isSaudi: true,
-    documents: [
-      { id: 'd3', type: 'إقامة', expiryDate: '2025-01-20' }
-    ]
-  },
-  {
-    id: '3',
-    name: 'راجيش كومار',
-    role: 'محاسب',
-    userRole: 'EMPLOYEE',
-    department: 'المالية',
-    branch: 'المركز الرئيسي - الرياض',
-    salary: 7500,
-    joinDate: '2023-05-20',
-    status: EmployeeStatus.ACTIVE,
-    email: 'rajesh@company.com',
-    phone: '0599999999',
-    avatar: 'https://picsum.photos/seed/3/200',
-    isSaudi: false,
-    documents: [
-      { id: 'd4', type: 'إقامة', expiryDate: '2025-08-10' }
-    ]
+    idNumber: '2000000001',
+    idExpiryDate: '2025-05-15',
+    iban: 'SA1000000000000000000002',
+    careerPathId: 'path_hr_growth',
+    currentLevelId: 'lv_hr_spec',
+    documents: []
   }
 ];
 

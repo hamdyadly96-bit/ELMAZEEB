@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import Payroll from './Payroll';
-import Financials from './Financials';
-import { Employee, FinancialAdjustment, SystemSettings, ServiceRequest, AttendanceEntry, Shift } from '../types';
+import Payroll from './Payroll.tsx';
+import Financials from './Financials.tsx';
+import { Employee, FinancialAdjustment, SystemSettings, ServiceRequest, AttendanceEntry, Shift } from '../types.ts';
 
 interface FinanceHubProps {
   employees: Employee[];

@@ -1,106 +1,104 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+/**
+ * تحليل المستندات واستخراج البيانات (هوية، إقامة)
+ */
 export const extractEmployeeDataFromDocument = async (base64Data: string, mimeType: string) => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [{ inlineData: { data: base64Data, mimeType: mimeType } }],
+      contents: { 
+        parts: [
+          { inlineData: { data: base64Data, mimeType: mimeType } },
+          { text: "أنت محلل وثائق سعودي خبير. استخرج من هذه الصورة: الاسم الكامل، رقم الهوية أو الإقامة، تاريخ الانتهاء، والجنس. أرجع النتيجة بتنسيق JSON حصراً باللغة العربية." }
+        ] 
+      },
       config: {
-        systemInstruction: "أنت خبير في معالجة المستندات العربية. استخرج البيانات التالية بدقة: الاسم الكامل، رقم الهوية، تاريخ انتهاء الوثيقة، المسمى الوظيفي، ورقم IBAN بتنسيق JSON.",
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            name: { type: Type.STRING },
-            idNumber: { type: Type.STRING },
-            expiryDate: { type: Type.STRING },
-            iban: { type: Type.STRING },
-            role: { type: Type.STRING }
-          },
-          required: ["name", "idNumber", "role"]
-        }
+        responseMimeType: "application/json"
       }
     });
-    return response.text ? JSON.parse(response.text) : null;
+    
+    const text = response.text;
+    if (!text) return null;
+    return JSON.parse(text);
   } catch (error) {
-    console.error("Extraction Error:", error);
-    throw error;
+    console.error("AI Extraction Error:", error);
+    return null;
   }
 };
 
 /**
- * توليد توصيات تدريبية ذكية للموظف
+ * الحصول على رؤى ذكية حول أداء الموارد البشرية
  */
-export const getTrainingRecommendations = async (employee: any, attendanceStats: any) => {
-  try {
-    const prompt = `
-      الموظف: ${employee.name}
-      المسمى الوظيفي: ${employee.role}
-      المهارات الحالية: ${JSON.stringify(employee.skills || [])}
-      إحصائيات الالتزام: ${JSON.stringify(attendanceStats)}
-      الهدف: اقترح 3 دورات تدريبية (اسم الدورة، السبب، المهارة المستهدفة) لتطوير مساره المهني أو معالجة فجوات الأداء.
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        systemInstruction: "أنت مستشار تطوير مهني (Career Coach). قدم توصياتك باللغة العربية بتنسيق JSON فقط.",
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              courseName: { type: Type.STRING },
-              reason: { type: Type.STRING },
-              targetSkill: { type: Type.STRING }
-            },
-            required: ["courseName", "reason", "targetSkill"]
-          }
-        }
-      }
-    });
-    return response.text ? JSON.parse(response.text) : [];
-  } catch (error) {
-    console.error("AI Recommendations Error:", error);
-    return [];
-  }
-};
-
 export const getHRInsights = async (employees: any[]) => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `بيانات الموظفين: ${JSON.stringify(employees)}`,
+      contents: `حلل بيانات الموظفين التالية وقدم توصيات إدارية لتحسين الكفاءة: ${JSON.stringify(employees)}`,
       config: {
-        systemInstruction: "أنت محلل موارد بشرية. قدم تحليلاً ذكياً ومختصراً جداً (3 نقاط) حول الرواتب والهيكل التنظيمي بالعربية.",
-      },
+        systemInstruction: "أنت مستشار موارد بشرية خبير في السوق السعودي. لغتك رصينة وعملية."
+      }
     });
-    return response.text || "لا تتوفر تحليلات حالياً.";
+    return response.text;
   } catch (error) {
-    return "حدث خطأ في الاتصال بالذكاء الاصطناعي.";
+    return "عذراً، حدث خطأ أثناء تحليل البيانات.";
   }
 };
 
 /**
- * إنشاء وصف وظيفي بناءً على المسمى الوظيفي باستخدام الذكاء الاصطناعي
+ * إنشاء وصف وظيفي ذكي
  */
 export const generateJobDescription = async (role: string) => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `اكتب وصفاً وظيفياً مفصلاً للمسمى الوظيفي: ${role}. يجب أن يشمل المهام والمسؤوليات والمهارات المطلوبة.`,
-      config: {
-        systemInstruction: "أنت خبير في الموارد البشرية. قدم وصفاً وظيفياً احترافياً باللغة العربية.",
-      },
+      contents: `اكتب وصفاً وظيفياً متكاملاً لمنصب ${role} في شركة سعودية، يشمل المهام، المتطلبات، والمزايا.`,
     });
     return response.text;
   } catch (error) {
-    console.error("JD Generation Error:", error);
+    return null;
+  }
+};
+
+/**
+ * اقتراح دورات تدريبية بناءً على الأهداف
+ */
+export const getTrainingRecommendations = async (employee: any, context: any, goals: string[]) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `اقترح 3 دورات تدريبية للموظف ${employee.name} (منصب: ${employee.role}) لتتماشى مع أهداف الشركة: ${goals.join(', ')}. أرجع النتيجة بتنسيق JSON قائمة من الكائنات تحتوي على: courseName, reason, priorityLevel, strategicAlignment.`,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+    const text = response.text;
+    return text ? JSON.parse(text) : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+/**
+ * تحليل مطابقة السيرة الذاتية مع الوصف الوظيفي
+ * Added missing analyzeResumeMatching function
+ */
+export const analyzeResumeMatching = async (resumeText: string, jobDescription: string) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: `قارن السيرة الذاتية التالية: "${resumeText}" مع الوصف الوظيفي: "${jobDescription}". قيم المطابقة بنسبة مئوية وقدم ملاحظات مختصرة. أرجع النتيجة بتنسيق JSON: { "score": number, "feedback": string }`,
+      config: {
+        responseMimeType: "application/json"
+      }
+    });
+    const text = response.text;
+    return text ? JSON.parse(text) : null;
+  } catch (error) {
+    console.error("AI Matching Error:", error);
     return null;
   }
 };

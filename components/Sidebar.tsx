@@ -21,11 +21,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, alertCount, 
 
   const menuItems = [
     { id: 'dashboard', label: 'الرئيسية', icon: '🏠', roles: ['ADMIN', 'HR_MANAGER'] },
-    { id: 'people_hub', label: 'الموظفين', icon: '👥', badge: alertCount, roles: ['ADMIN', 'HR_MANAGER'] },
+    { id: 'people_hub', label: 'إدارة الكوادر', icon: '👥', badge: alertCount, roles: ['ADMIN', 'HR_MANAGER'] },
     { id: 'time_hub', label: 'الوقت والدوام', icon: '⏱️', roles: ['ADMIN', 'HR_MANAGER'] },
     { id: 'finance_hub', label: 'المالية والرواتب', icon: '💸', roles: ['ADMIN', 'HR_MANAGER'] },
     { id: 'growth_hub', label: 'الذكاء والنمو', icon: '🚀', roles: ['ADMIN', 'HR_MANAGER'] },
-    { id: 'self-service', label: 'خدماتي', icon: '👤', roles: ['ADMIN', 'HR_MANAGER', 'EMPLOYEE'] },
+    { id: 'self-service', label: 'بوابة الموظف', icon: '👤', roles: ['ADMIN', 'HR_MANAGER', 'EMPLOYEE'] },
   ];
 
   if (role === 'ADMIN') {
@@ -34,11 +34,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, alertCount, 
 
   const isCurrentTab = (id: string) => {
     if (activeTab === id) return true;
-    if (id === 'people_hub' && ['employees', 'org', 'docs', 'tree'].includes(activeTab)) return true;
-    if (id === 'time_hub' && ['attendance', 'leaves', 'shifts', 'biometric'].includes(activeTab)) return true;
-    if (id === 'finance_hub' && ['payroll', 'adjustments', 'approvals'].includes(activeTab)) return true;
-    if (id === 'growth_hub' && ['career', 'ai'].includes(activeTab)) return true;
-    return false;
+    const parentTabs: Record<string, string[]> = {
+      'people_hub': ['employees', 'org', 'docs', 'tree', 'depts'],
+      'time_hub': ['attendance', 'leaves', 'shifts', 'biometric'],
+      'finance_hub': ['payroll', 'adjustments', 'approvals'],
+      'growth_hub': ['career', 'ai', 'recruitment', 'paths']
+    };
+    return parentTabs[id]?.includes(activeTab);
   };
 
   return (
@@ -50,76 +52,61 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, alertCount, 
         />
       )}
 
-      <aside className={`fixed right-0 top-0 h-full bg-white border-l border-slate-100 shadow-2xl flex flex-col transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) z-[90] w-72 lg:w-64 
+      <aside className={`fixed right-0 top-0 h-full bg-white border-l border-slate-100 flex flex-col transition-all duration-500 cubic-bezier(0.16, 1, 0.3, 1) z-[90] w-[280px] lg:w-72 
         ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}>
         
-        <div className="p-6 lg:p-8 flex-shrink-0 relative">
+        <div className="p-10 flex-shrink-0 relative">
           <button 
             onClick={onClose} 
-            className="lg:hidden absolute left-4 top-6 w-10 h-10 flex items-center justify-center bg-slate-50 rounded-2xl text-slate-400 active:scale-90 transition-all"
+            className="lg:hidden absolute left-4 top-10 w-10 h-10 flex items-center justify-center bg-slate-50 rounded-2xl text-slate-400 active:scale-90 transition-all shadow-sm"
           >
             ✕
           </button>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-600 rounded-[1.25rem] flex items-center justify-center text-white text-2xl font-black shadow-xl shadow-blue-200">R</div>
+          
+          <div className="flex flex-col items-center text-center gap-2 mb-4">
+            <div className="w-16 h-16 bg-[#1b3152] rounded-[1.75rem] flex items-center justify-center shadow-2xl shadow-[#1b3152]/20 mb-3 group hover:rotate-6 transition-transform">
+               <span className="text-white text-3xl font-black">M</span>
+            </div>
             <div>
-              <h1 className="text-xl font-black text-slate-800 tracking-tight">رؤية</h1>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">HR Pro</span>
-              </div>
+              <h1 className="text-lg font-black text-[#1b3152] leading-tight">أسواق المعازيب</h1>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">HR Intelligence System</p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto custom-scrollbar no-scrollbar">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-4 mb-4 mt-2">القائمة الرئيسية</p>
+        <nav className="flex-1 px-6 space-y-1.5 overflow-y-auto no-scrollbar pb-10">
+          <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] px-5 mb-5 mt-4">القائمة الرئيسية</p>
           {menuItems.filter(item => item.roles.includes(role)).map((item) => (
             <button
               key={item.id}
               onClick={() => handleTabClick(item.id)}
-              className={`w-full text-right flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group active-scale ${
+              className={`w-full text-right flex items-center justify-between px-6 py-4 rounded-[1.5rem] transition-all duration-300 active-scale group ${
                 isCurrentTab(item.id)
-                  ? 'bg-slate-900 text-white shadow-xl shadow-slate-200'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-[#1b3152] text-white premium-shadow'
+                  : 'text-slate-500 hover:bg-slate-50'
               }`}
             >
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-4">
                 <span className={`text-xl transition-transform group-hover:scale-110 ${isCurrentTab(item.id) ? 'opacity-100' : 'opacity-60'}`}>{item.icon}</span>
-                <span className="font-bold text-sm">{item.label}</span>
+                <span className="font-bold text-[13px] tracking-tight">{item.label}</span>
               </div>
               {item.badge ? (
-                <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${isCurrentTab(item.id) ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'}`}>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${isCurrentTab(item.id) ? 'bg-[#76bc43] text-white' : 'bg-red-500 text-white animate-pulse'}`}>
                   {item.badge}
                 </span>
               ) : null}
             </button>
           ))}
-
-          <div className="pt-8 mt-8 border-t border-slate-50">
-            <button onClick={onSwitchRole} className="w-full text-right group p-1 bg-slate-50 rounded-[1.5rem] border border-slate-100 active-scale transition-all hover:bg-white hover:shadow-lg">
-              <div className="flex items-center gap-3 p-3">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-xl">🎭</div>
-                <div className="flex-1">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">تبديل الواجهة</p>
-                  <p className="text-[11px] font-bold text-slate-700">إلى {role === 'ADMIN' ? 'مدير' : role === 'HR_MANAGER' ? 'موظف' : 'مسؤول'}</p>
-                </div>
-                <span className="text-slate-300 opacity-0 group-hover:opacity-100 transition-all ml-1">←</span>
-              </div>
-            </button>
-          </div>
         </nav>
 
-        <div className="p-4 mt-auto">
-          <div className="bg-blue-600 rounded-[2rem] p-6 text-white relative overflow-hidden group cursor-pointer shadow-xl shadow-blue-100">
-             <div className="relative z-10">
-                <p className="text-[10px] font-black opacity-60 uppercase mb-1">المستخدم الحالي</p>
-                <p className="font-black text-sm mb-1">سلمان العتيبي</p>
-                <p className="text-[10px] font-bold opacity-80">مدير تنفيذي</p>
-             </div>
-             <div className="absolute -left-4 -bottom-4 w-20 h-20 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
-             <span className="absolute top-4 left-4 text-xl opacity-30">✨</span>
-          </div>
+        <div className="p-8 border-t border-slate-50">
+          <button onClick={onSwitchRole} className="w-full text-right p-4 bg-slate-50 rounded-[1.5rem] border border-slate-100 active-scale transition-all hover:bg-slate-100 flex items-center gap-4 group">
+            <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-sm text-xl border border-slate-100 group-hover:bg-[#76bc43] group-hover:text-white transition-colors">🎭</div>
+            <div className="flex-1">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">تبديل الهوية</p>
+              <p className="text-xs font-bold text-[#1b3152]">إلى {role === 'ADMIN' ? 'الخدمة الذاتية' : 'إدارة النظام'}</p>
+            </div>
+          </button>
         </div>
       </aside>
     </>

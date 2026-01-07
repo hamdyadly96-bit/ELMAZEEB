@@ -1,8 +1,9 @@
 {
-  "name": "نظام إدارة الموارد البشرية الذكي",
+  "name": "ELMAZEEB HR PRO",
   "description": "تطبيق متكامل لإدارة الموارد البشرية باللغة العربية، يتيح إدارة الموظفين، الرواتب، الحضور، مع مساعد ذكاء اصطناعي لتحليل البيانات.",
   "requestFramePermissions": [
     "camera",
+    "microphone",
     "geolocation"
   ]
 }

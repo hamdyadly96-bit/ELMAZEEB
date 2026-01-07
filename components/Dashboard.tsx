@@ -1,156 +1,121 @@
 
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Employee, EmployeeStatus, SystemSettings, AttendanceEntry, Shift } from '../types';
+import { Employee, SystemSettings, AttendanceEntry, Shift } from '../types';
 
 interface DashboardProps {
   employees: Employee[];
   attendance: AttendanceEntry[];
   shifts: Shift[];
   settings: SystemSettings;
+  onNavigate: (tabId: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ employees, attendance, shifts, settings }) => {
+const Dashboard: React.FC<DashboardProps> = ({ employees, attendance, settings, onNavigate }) => {
   const totalSalary = employees.reduce((sum, emp) => sum + emp.salary, 0);
   
-  const calculateHours = (inStr?: string, outStr?: string): number => {
-    if (!inStr || !outStr) return 0;
-    const [inH, inM] = inStr.split(':').map(Number);
-    const [outH, outM] = outStr.split(':').map(Number);
-    let diff = (outH + outM / 60) - (inH + inM / 60);
-    if (diff < 0) diff += 24; 
-    return parseFloat(diff.toFixed(2));
-  };
-
-  const productivityStats = useMemo(() => {
+  const stats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    const todayRecords = attendance.filter(a => a.date === today);
-    const totalTodayHours = todayRecords.reduce((sum, r) => sum + calculateHours(r.clockIn, r.clockOut), 0);
-    
+    const todayAttendance = attendance.filter(a => a.date === today);
     return {
-      todayHours: parseFloat(totalTodayHours.toFixed(1)),
-      attendanceRate: employees.length > 0 ? (todayRecords.length / employees.length) * 100 : 0
+      activeCount: employees.filter(e => e.status === 'نشط').length,
+      attendanceRate: employees.length > 0 ? Math.round((todayAttendance.length / employees.length) * 100) : 0,
+      avgSalary: employees.length > 0 ? Math.round(totalSalary / employees.length) : 0
     };
-  }, [attendance, employees]);
+  }, [employees, attendance, totalSalary]);
 
-  const departmentData = employees.reduce((acc: any[], emp) => {
-    const existing = acc.find(item => item.name === emp.department);
-    if (existing) {
-      existing.value += 1;
-    } else {
-      acc.push({ name: emp.department, value: 1 });
-    }
-    return acc;
-  }, []);
-
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-  const expiringDocs = useMemo(() => {
-    const alerts: any[] = [];
-    const today = new Date();
-    const thresholdDate = new Date();
-    thresholdDate.setDate(today.getDate() + settings.alertThresholdDays);
-
+  const departmentData = useMemo(() => {
+    const data: Record<string, number> = {};
     employees.forEach(emp => {
-      emp.documents?.forEach(doc => {
-        const expiry = new Date(doc.expiryDate);
-        if (expiry <= thresholdDate) {
-          const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          alerts.push({ empName: emp.name, docType: doc.type, expiryDate: doc.expiryDate, isExpired: expiry < today, daysLeft: diffDays });
-        }
-      });
+      data[emp.department] = (data[emp.department] || 0) + 1;
     });
-    return alerts.sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()).slice(0, 5);
-  }, [employees, settings.alertThresholdDays]);
+    return Object.entries(data).map(([name, value]) => ({ name, value }));
+  }, [employees]);
+
+  const COLORS = ['#1b3152', '#76bc43', '#3b82f6', '#f59e0b', '#8b5cf6'];
 
   return (
-    <div className="space-y-8 pb-12 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-10 page-transition">
+      {/* الترحيب والبحث السريع */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">نظرة عامة على المؤسسة</h2>
-          <p className="text-sm text-slate-500 font-medium">مرحباً بك في لوحة تحكم {settings.companyName}</p>
+          <h2 className="text-3xl font-black text-[#1b3152] tracking-tight">لوحة التحكم المركزية</h2>
+          <p className="text-sm text-slate-500 font-medium mt-1 uppercase tracking-widest">إدارة شاملة لموارد {settings.companyName}</p>
         </div>
-        <div className="px-5 py-2.5 bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center gap-3">
-          <div className="flex -space-x-2 rtl:space-x-reverse">
-            {employees.slice(0, 3).map((e, i) => (
-              <img key={i} src={e.avatar} className="w-8 h-8 rounded-full border-2 border-white object-cover" alt="" />
-            ))}
-            <div className="w-8 h-8 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center text-[10px] font-black text-white">+{employees.length - 3}</div>
-          </div>
-          <span className="text-[11px] font-black text-slate-700">فريق العمل المباشر</span>
+        <div className="flex gap-3">
+           <button onClick={() => onNavigate('self-service')} className="px-6 py-3.5 bg-white border border-slate-200 text-[#1b3152] rounded-2xl text-[10px] font-black shadow-sm hover:bg-slate-50 transition active-scale">بوابة الموظف</button>
+           <button onClick={() => onNavigate('people_hub')} className="px-6 py-3.5 bg-[#1b3152] text-white rounded-2xl text-[10px] font-black shadow-xl shadow-[#1b3152]/20 active-scale">إدارة الكوادر</button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="إجمالي الموظفين" value={employees.length} subtext="كادر وظيفي" icon="👥" color="indigo" />
-        <StatCard title="ساعات اليوم" value={productivityStats.todayHours} subtext="ساعة فعلية" icon="⏱️" color="emerald" />
-        <StatCard title="الالتزام اليومي" value={`${productivityStats.attendanceRate.toFixed(0)}%`} subtext="نسبة الحضور" icon="⚡" color="amber" />
-        <StatCard title="الميزانية الشهرية" value={`${(totalSalary/1000).toFixed(1)}k`} subtext="ألف ر.س" icon="💰" color="rose" />
+      {/* بطاقات الإحصائيات السريعة */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard title="إجمالي الموظفين" value={employees.length} subtext="نشط حالياً" icon="👥" color="navy" />
+        <StatCard title="نسبة الحضور اليوم" value={`${stats.attendanceRate}%`} subtext="تحديث حي" icon="⚡" color="green" />
+        <StatCard title="إجمالي الرواتب" value={`${(totalSalary/1000).toFixed(1)}k`} subtext="ريال / شهرياً" icon="💰" color="blue" />
       </div>
 
+      {/* مركز الإجراءات الفورية */}
+      <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm">
+         <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-8">إجراءات سريعة للإطلاق 🚀</h3>
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <QuickAction title="توظيف جديد" icon="👤" onClick={() => onNavigate('people_hub')} color="bg-blue-50 text-blue-600" />
+            <button onClick={() => onNavigate('finance_hub')} className="flex flex-col items-center justify-center p-6 rounded-[2rem] bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition active-scale group">
+               <span className="text-3xl mb-3 group-hover:scale-110 transition-transform">💸</span>
+               <span className="text-[10px] font-black">صرف الرواتب</span>
+            </button>
+            <QuickAction title="جدولة الدوام" icon="⏱️" onClick={() => onNavigate('time_hub')} color="bg-amber-50 text-amber-600" />
+            <QuickAction title="تحليل AI" icon="✨" onClick={() => onNavigate('growth_hub')} color="bg-purple-50 text-purple-600" />
+         </div>
+      </div>
+
+      {/* الرسوم البيانية والتنبيهات */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-          <div className="flex justify-between items-center mb-10 relative z-10">
-            <h3 className="text-lg font-black text-slate-800 flex items-center gap-3">
-              <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
-              توزيع الموارد البشرية
-            </h3>
-            <button className="text-[10px] font-black px-4 py-2 bg-slate-50 rounded-xl hover:bg-slate-100 transition">تحليل معمق</button>
-          </div>
-          <div className="h-72 relative z-10">
+        <div className="lg:col-span-8 bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-sm">
+          <h3 className="text-lg font-black text-[#1b3152] mb-10 flex items-center gap-3">
+            <span className="w-1.5 h-6 bg-[#76bc43] rounded-full"></span>
+            تحليل توزيع القوى العاملة
+          </h3>
+          <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={departmentData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '10px', fontWeight: 'bold' }} />
                 <YAxis axisLine={false} tickLine={false} style={{ fontSize: '10px', fontWeight: 'bold' }} />
-                <Tooltip 
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{ borderRadius: '1.25rem', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)', direction: 'rtl', fontSize: '11px' }}
-                />
-                <Bar dataKey="value" radius={[12, 12, 0, 0]} barSize={40}>
-                  {departmentData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
+                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} />
+                <Bar dataKey="value" radius={[12, 12, 0, 0]} barSize={45}>
+                  {departmentData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl pointer-events-none transition-transform group-hover:scale-150 duration-700"></div>
         </div>
 
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden h-full">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-lg font-black flex items-center gap-3">
-                <span className="w-1.5 h-6 bg-red-500 rounded-full"></span>
-                تنبيهات فورية
-              </h3>
-              <span className="bg-red-500/20 text-red-400 text-[10px] font-black px-2.5 py-1 rounded-lg border border-red-500/30">حرجة</span>
-            </div>
-            
-            <div className="space-y-4">
-              {expiringDocs.length > 0 ? expiringDocs.map((alert, i) => (
-                <div key={i} className="group p-5 rounded-[1.75rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-pointer">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg ${alert.isExpired ? 'bg-red-500 text-white' : 'bg-amber-500 text-slate-900'}`}>
-                      {alert.isExpired ? 'منتهية' : `خلال ${alert.daysLeft} يوم`}
-                    </span>
-                    <span className="text-[9px] text-slate-500 font-mono">{alert.expiryDate}</span>
-                  </div>
-                  <p className="text-xs font-black text-white group-hover:text-blue-400 transition-colors">{alert.empName}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">{alert.docType}</p>
-                </div>
-              )) : (
-                <div className="py-20 text-center opacity-30">
-                  <span className="text-5xl block mb-4">🛡️</span>
-                  <p className="text-xs font-bold">جميع الوثائق ممتثلة للنظام</p>
-                </div>
-              )}
-            </div>
+        <div className="lg:col-span-4 bg-[#1b3152] rounded-[3.5rem] p-10 text-white shadow-2xl relative overflow-hidden group">
+          <div className="relative z-10">
+            <h3 className="text-xl font-black mb-8">مركز العمليات 🛠️</h3>
+            <div className="space-y-6">
+              {/* تنبيه انتهاء إقامة - يوجه إلى قسم الوثائق */}
+              <button 
+                onClick={() => onNavigate('docs')}
+                className="w-full text-right p-5 bg-white/5 rounded-3xl border border-white/10 hover:bg-white/15 hover:border-[#76bc43]/30 transition-all active-scale"
+              >
+                <p className="text-xs font-black text-[#76bc43]">تنبيه انتهاء إقامة</p>
+                <p className="text-[10px] opacity-60 mt-2 font-bold leading-relaxed">هناك 3 موظفين تنتهي إقاماتهم خلال 30 يوماً القادمة.</p>
+              </button>
 
-            <button className="mt-8 w-full bg-white text-slate-900 py-4 rounded-2xl text-xs font-black hover:bg-blue-50 transition-all active-scale shadow-xl shadow-slate-950/20">الأرشيف الكامل 📂</button>
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+              {/* تنبيه طلبات الإجازة - يوجه إلى قسم الإجازات */}
+              <button 
+                onClick={() => onNavigate('leaves')}
+                className="w-full text-right p-5 bg-white/5 rounded-3xl border border-white/10 hover:bg-white/15 hover:border-blue-400/30 transition-all active-scale"
+              >
+                <p className="text-xs font-black text-blue-400">طلبات إجازة معلقة</p>
+                <p className="text-[10px] opacity-60 mt-2 font-bold leading-relaxed">لديك 5 طلبات إجازة سنوية بانتظار الاعتماد المالي.</p>
+              </button>
+            </div>
+            <button onClick={() => onNavigate('people_hub')} className="w-full mt-10 py-5 bg-[#76bc43] text-white rounded-3xl font-black text-[10px] hover:bg-[#68a63a] transition shadow-lg shadow-[#76bc43]/20 active-scale uppercase tracking-widest">عرض كافة التنبيهات</button>
           </div>
+          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-[#76bc43]/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-700"></div>
         </div>
       </div>
     </div>
@@ -158,30 +123,32 @@ const Dashboard: React.FC<DashboardProps> = ({ employees, attendance, shifts, se
 };
 
 const StatCard = ({ title, value, subtext, icon, color }: any) => {
-  const styles: any = {
-    indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
-    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    amber: 'bg-amber-50 text-amber-600 border-amber-100',
-    rose: 'bg-rose-50 text-rose-600 border-rose-100',
+  const colorMap: any = {
+    navy: 'border-r-[#1b3152] bg-white',
+    green: 'border-r-[#76bc43] bg-white',
+    blue: 'border-r-[#3b82f6] bg-white',
   };
-
   return (
-    <div className="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm card-hover relative overflow-hidden">
-      <div className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center text-3xl mb-6 shadow-sm ${styles[color]}`}>
-        {icon}
-      </div>
-      <div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{title}</p>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-black text-slate-800 tracking-tighter leading-none">{value}</span>
-          <span className="text-[10px] font-bold text-slate-400">{subtext}</span>
+    <div className={`p-10 rounded-[3rem] border-r-[12px] shadow-sm hover:shadow-xl transition-all ${colorMap[color]}`}>
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{title}</p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-4xl font-black text-[#1b3152] tracking-tighter">{value}</span>
+            <span className="text-[10px] font-bold text-slate-400">{subtext}</span>
+          </div>
         </div>
-      </div>
-      <div className="absolute -bottom-4 -left-4 w-16 h-16 opacity-[0.03] group-hover:scale-150 transition-transform duration-500">
-        <span className="text-6xl">{icon}</span>
+        <span className="text-4xl drop-shadow-md">{icon}</span>
       </div>
     </div>
   );
 };
+
+const QuickAction = ({ title, icon, onClick, color }: any) => (
+  <button onClick={onClick} className={`flex flex-col items-center justify-center p-6 rounded-[2.5rem] ${color} border border-transparent hover:shadow-lg transition-all active-scale group`}>
+     <span className="text-3xl mb-3 group-hover:scale-110 transition-transform">{icon}</span>
+     <span className="text-[10px] font-black">{title}</span>
+  </button>
+);
 
 export default Dashboard;
